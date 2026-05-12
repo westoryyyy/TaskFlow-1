@@ -27,6 +27,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/tugas/{id}/edit', [TugasController::class, 'edit']);
     Route::post('/tugas/{id}/update', [TugasController::class, 'update']);
     Route::post('/tugas/{id}/selesai', [TugasController::class, 'selesai']);
+    Route::post('/tugas/{id}/delete', [TugasController::class, 'destroy']);
 
     Route::get('/categories', [KategoriController::class, 'index']);
     Route::post('/categories/store', [KategoriController::class, 'store']);

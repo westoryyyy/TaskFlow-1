@@ -10,24 +10,38 @@ class TugasController extends Controller
 {
     public function dashboard()
     {
-        $totalTugas = Tugas::count();
-        $selesai = Tugas::where('is_selesai', true)->count();
-        $mendekatiDeadline = Tugas::where('is_selesai', false)
+        $userId = auth()->id();
+
+        $totalTugas = Tugas::where('user_id', $userId)->count();
+
+        $selesai = Tugas::where('user_id', $userId)
+            ->where('is_selesai', true)
+            ->count();
+
+        $mendekatiDeadline = Tugas::where('user_id', $userId)
+            ->where('is_selesai', false)
             ->whereNotNull('deadline')
             ->where('deadline', '<=', now()->addDays(3))
             ->count();
-            
+
         $tugasList = Tugas::with('kategori')
+            ->where('user_id', $userId)
             ->where('is_selesai', false)
             ->orderBy('deadline', 'asc')
             ->get();
 
-        return view('dashboard', compact('totalTugas', 'selesai', 'mendekatiDeadline', 'tugasList'));
+        return view('dashboard', compact(
+            'totalTugas',
+            'selesai',
+            'mendekatiDeadline',
+            'tugasList'
+        ));
     }
 
     public function create()
     {
         $kategoris = Kategori::all();
+
         return view('tugas.create', compact('kategoris'));
     }
 
@@ -39,6 +53,7 @@ class TugasController extends Controller
         ]);
 
         Tugas::create([
+            'user_id' => auth()->id(),
             'judul' => $request->judul_tugas,
             'deskripsi' => $request->deskripsi,
             'deadline' => $request->tanggal_deadline,
@@ -48,26 +63,30 @@ class TugasController extends Controller
             'is_selesai' => false,
         ]);
 
-        return redirect('/dashboard')->with('success', 'Tugas baru berhasil ditambahkan!');
+        return redirect('/dashboard')
+            ->with('success', 'Tugas baru berhasil ditambahkan!');
     }
 
     public function show($id)
     {
         $tugas = Tugas::with('kategori')->findOrFail($id);
+
         return view('tugas.show', compact('tugas'));
     }
 
     public function edit($id)
     {
         $tugas = Tugas::findOrFail($id);
+
         $kategoris = Kategori::all();
+
         return view('tugas.edit', compact('tugas', 'kategoris'));
     }
 
     public function update(Request $request, $id)
     {
         $tugas = Tugas::findOrFail($id);
-        
+
         $tugas->update([
             'judul' => $request->judul,
             'deskripsi' => $request->deskripsi,
@@ -75,14 +94,29 @@ class TugasController extends Controller
             'kategori_id' => $request->kategori,
         ]);
 
-        return redirect("/tugas/$id")->with('success', 'Perubahan berhasil disimpan, Paw!');
+        return redirect("/tugas/$id")
+            ->with('success', 'Perubahan berhasil disimpan!');
     }
 
     public function selesai($id)
     {
         $tugas = Tugas::findOrFail($id);
-        $tugas->update(['is_selesai' => true]);
-        
-        return redirect('/dashboard')->with('success', 'Mantap! Tugas berhasil diselesaikan.');
+
+        $tugas->update([
+            'is_selesai' => true
+        ]);
+
+        return redirect('/dashboard')
+            ->with('success', 'Mantap! Tugas berhasil diselesaikan.');
+    }
+
+    public function destroy($id)
+    {
+        $tugas = Tugas::findOrFail($id);
+
+        $tugas->delete();
+
+        return redirect('/dashboard')
+            ->with('success', 'Tugas berhasil dihapus!');
     }
 }
